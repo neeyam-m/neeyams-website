@@ -1,12 +1,61 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  <title>Portfolio Test</title>
-  <meta name="description" content="My first website">
-  <meta name="more" content="lets see what this looks like on a website">
+    <title>Neeyam's Portfolio </title>
+    <style>
+        body {
+            font-family: 'Gill Sans';
+            background-color: GhostWhite;
+            color: SlateGrey;
+        }
+
+        header {
+            background-color: GhostWhite;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .projects {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .project-button {
+            border: none;
+            padding: 20px;
+            background-color: SlateGrey;
+            color: GhostWhite;
+            text-align: center;
+            cursor: pointer;
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
-  Content goes here.
-  Okay so actually the content goes like here, that was not actual content
+    <header>
+        <h1>Neeyam's Portfolio Website</h1>
+    </header>
+
+    <div class="projects">
+        <a href="project1.html" class="project-button">Project 1</a>
+        <a href="project2.html" class="project-button">Project 2</a>
+        <a href="project3.html" class="project-button">Project 3</a>
+    </div>
+
+    <script>
+        const projectButtons = document.querySelectorAll('.project-button');
+        projectButtons.forEach(button => {
+            button.addEventListener('click', (event) => {
+                // prevent default link behaviour
+                event.preventDefault();
+
+                // do some logic here, like loading project content
+
+                // navigate to the project page
+                window.location.href = event.target.href;
+            });
+        });
+    </script>
 </body>
 </html>
