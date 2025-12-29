@@ -1,52 +1,243 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, user-scalable=yes">
-    <title>NeeyamType</title>
-    <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8" />
+<title>Crossword Puzzle</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #fff;
+  }
+
+  .crossword {
+    display: grid;
+    grid-template-columns: repeat(16, 40px);
+    grid-template-rows: repeat(15, 40px);
+    gap: 0;
+    margin: 20px auto;
+    width: 640px;
+  }
+
+  .cell {
+    border: 1px solid #000;
+    position: relative;
+  }
+
+  .cell input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    text-align: center;
+    font-size: 18px;
+    text-transform: uppercase;
+  }
+
+  .cell input:focus {
+    outline: none;
+    background: #eef;
+  }
+
+  .black {
+    background: #000;
+  }
+
+  .number {
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    font-size: 10px;
+  }
+
+  .completed {
+    text-align: center;
+    font-size: 20px;
+    color: green;
+    display: none;
+  }
+</style>
 </head>
+
 <body>
-    <main>
-        <h1>
-            Neeyam's Website V1
-        </h1>
-        <div>
-            <h2>
-                Education
-            </h2>
-                <h3>
-                    University of Michigan
-                </h3>
-                Majoring in Computer Science, Minoring in Statistics, Hoping to pursue a Master Degree in Data Sciene. 
-                <h3>
-                Michigan State University 
-                </h3>
-                Attended MSU for my first year studying computer science, took all of the foundational classes, and was a TA.
-            <h2>
-                Work Experience
-            </h2>
-                <h3>
-                    Research Assistant SOCR Lab
-                </h3>
-                AWS stuff deploying an Virtual Hosptial appliaction for obfuscation of sensitive hosptial patient data.
-                <h3>
-                    Teaching Assistant CSE 102
-                </h3>
-                I was a teaching assistant for an introductory computer science course teaching algorithmic thinking in Python. 
-            <h2>
-                Projects
-            </h2>
-                <h3>
-                    Personal Website V1
-                </h3>
-            <h2>
-                Student Organizations
-            </h2>
-            <h3>
-                Timeline View coming soon...
-            </h3>
-        </div>
-    </main>
+
+
+<div style="display:flex; gap:40px; justify-content:center;">
+
+  <!-- Crossword -->
+  <div>
+    <div class="crossword" id="crossword"></div>
+    <div class="completed" id="completed">✅ Puzzle Completed!</div>
+  </div>
+
+  <!-- Clues -->
+  <div style="max-width:300px;">
+    <h3>Across</h3>
+    <ol id="across-clues"></ol>
+
+    <h3>Down</h3>
+    <ol id="down-clues"></ol>
+  </div>
+
+</div>
+
+<script>
+// 15 rows x 16 cols
+// NOTE: Cells marked with answer:"?" are in the region that is not perfectly legible
+// for exact ROW alignment in the photo. Everything else is confidently placed.
+
+const grid = [
+  // row 0
+  [null,null,null,null,null,{number:1, answer:"C"},{answer:"H"},{answer:"I"},{answer:"N"},{answer:"E"},{number:2, answer:"S"},{answer:"E"},null,{number:3, answer:"S"},null,null],
+  // row 1 
+  [null,null,null,null,null,null,null,null,null,null,{answer:"L"},null, null,{answer:"W"},null,null],
+  // row 2
+  [null,null,null,{number:4, answer:"W"},null,{number:5, answer:"M"},null,null,{number:6, answer:"C"},{answer:"H"},{answer:"E"},{answer:"E"},{answer:"S"},{answer:"E"},null,null],
+
+  // row 3
+  [null,null,null,{answer:"E"},null, {answer:"O"},null, null,null,null,{answer:"E"},null,null,{answer:"A"},null,null],
+
+  // row 4  (INGTON ... plus crossings)
+  [{number:7, answer:"I"},{answer:"N"},{answer:"G"},{answer:"T"},{answer:"O"},{answer:"N"}, null, null,{number:8, answer:"F"},null,{answer:"P"},null,null,{answer:"T"},null,null],
+
+  // row 5 (BABY ... plus MONKEY end and SWEATY end)
+  [null,null,null,null,null,{answer:"K"},null,{number:9,answer:"B"},{answer:"A"},{answer:"B"},{answer:"Y"},null,null,{answer:"Y"},null,null],
+
+  // row 6 (MONKEY ends, FALCON continues)
+  [null,null,null,null,null,{answer:"E"},null,null,{answer:"L"},null,null,null,null,null,null,null],
+
+  // row 7 (CHUBBY across, BOWLING starts at col3, FALCON has C at col8)
+  [{number:10, answer:"C"},{answer:"H"},{answer:"U"},{number:11, answer:"B"},{answer:"B"},{answer:"Y"},null,null,{answer:"C"},null,null,null,null,null,null,null],
+
+  // row 8 (BOWLING continues, CHOPPED across, HUNGRY starts on far right)
+  [null,null,null,{answer:"O"},null,null,{number:12, answer:"C"},{answer:"H"},{answer:"O"},{answer:"P"},{answer:"P"},{answer:"E"},{number:13, answer:"D"},null,null,null],
+
+  // row 9 (BOWLING continues, CRACK continues, FALCON ends with N under O, DAWN continues, HUNGRY continues)
+  [null,null,null,{answer:"W"},null,null,{answer:"R"},null,{answer:"N"},null,null,null,{answer:"A"},null,{number:14, answer:"H"},null],
+
+  // row 10  ----- AMBIGUOUS ROW ALIGNMENT STARTS HERE -----
+  // This row contains one of: (BOWLING L) and/or (FIERCE) depending on a one-row shift.
+  [null,null,null,{answer:"L"},null,null,{answer:"A"},null,null,null,null,null,{answer:"W"},null,{answer:"U"},null],
+
+  // row 11  (this is where FIERCE+MORNING appear, but could be row 10 instead)
+  [null,null,{number:15, answer:"F"},{answer:"I"},{answer:"E"},{answer:"R"},{answer:"C"},{answer:"E"},null,{number:16,answer:"M"},{answer:"O"},{answer:"R"},{answer:"N"},{answer:"I"},{answer:"N"},{answer:"G"}],
+
+  // row 12 (continuations under the MORNING/HUNGRY column area)
+  [null,null,null,{answer:"N"},null,null,{answer:"K"},null,null,null,null,null,null,null,{answer:"G"},null],
+
+  // row 13
+  [null,null,null,{answer:"G"},null,null,null,null,null,null,null,null,null,null,{answer:"R"},null],
+
+  // row 14
+  [null,null,null,null,null,null,null,null,null,null,null,null,null,null,{answer:"Y"},null],
+];
+
+const clues = {
+  across: {
+    1: "Clue text here"
+  },
+  down: {
+    2: "Clue text here"
+  }
+};
+
+const crossword = document.getElementById("crossword");
+const completed = document.getElementById("completed");
+
+let currentDirection = "across"; // "across" or "down"
+const inputs = [];
+const inputMap = new Map();
+
+grid.forEach((row, r) => {
+  row.forEach((cell, c) => {
+    if (cell === null) {
+      const div = document.createElement("div");
+      div.className = "cell black";
+      crossword.appendChild(div);
+    } else {
+      const div = document.createElement("div");
+      div.className = "cell";
+
+      if (cell.number) {
+        const num = document.createElement("div");
+        num.className = "number";
+        num.textContent = cell.number;
+        div.appendChild(num);
+      }
+
+      const input = document.createElement("input");
+      input.maxLength = 1;
+      input.dataset.answer = cell.answer;
+      input.dataset.row = r;
+      input.dataset.col = c;
+
+      inputs.push(input);
+      inputMap.set(`${r},${c}`, input);
+
+      input.addEventListener("click", () => setDirection(r, c));
+      input.addEventListener("input", () => {
+        input.value = input.value.toUpperCase();
+        moveNext(r, c);
+        checkCompletion();
+      });
+
+      div.appendChild(input);
+      crossword.appendChild(div);
+    }
+  });
+});
+
+function hasCell(r, c) {
+  return grid[r] && grid[r][c] !== null;
+}
+
+function setDirection(r, c) {
+  const canAcross = hasCell(r, c + 1);
+  const canDown = hasCell(r + 1, c);
+
+  if (canAcross && canDown) {
+    currentDirection = currentDirection === "across" ? "down" : "across";
+  } else if (canAcross) {
+    currentDirection = "across";
+  } else if (canDown) {
+    currentDirection = "down";
+  }
+}
+
+function moveNext(r, c) {
+  let nextR = r;
+  let nextC = c;
+
+  if (currentDirection === "across") nextC++;
+  else nextR++;
+
+  const next = inputMap.get(`${nextR},${nextC}`);
+  if (next) next.focus();
+}
+
+function checkCompletion() {
+  const done = inputs.every(
+    i => i.value
+  );
+  completed.style.display = done ? "block" : "none";
+}
+function renderClues() {
+  const acrossList = document.getElementById("across-clues");
+  const downList = document.getElementById("down-clues");
+
+  for (const num in clues.across) {
+    const li = document.createElement("li");
+    li.textContent = clues.across[num];
+    acrossList.appendChild(li);
+  }
+
+  for (const num in clues.down) {
+    const li = document.createElement("li");
+    li.textContent = clues.down[num];
+    downList.appendChild(li);
+  }
+}
+
+renderClues();
+</script>
 </body>
 </html>
