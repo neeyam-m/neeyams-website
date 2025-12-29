@@ -7,7 +7,14 @@
 <style>
   body {
     font-family: Arial, sans-serif;
-    background: #fff;
+    background-color: #F1A9A0;
+  }
+
+  #background {
+  position: fixed;
+  inset: 0;
+  z-index: -1; /* sits behind everything */
+  overflow: hidden;
   }
 
   .crossword {
@@ -55,31 +62,134 @@
     color: green;
     display: none;
   }
+  .pixel-block {
+  position: absolute;
+  width: 6em;
+  height: 5em;
+  pointer-events: none; /* optional */
+  }
+  .pixelized--heart {
+  display: block;
+  width: 1em;
+  height: 1em;
+  box-shadow:
+	1em 0em #F22613,
+	2em 0em #F22613,
+	4em 0em #F22613,
+	5em 0em #F22613,
+
+	0em 1em #F22613,
+	1em 1em #F22613,
+	2em 1em #F22613,
+	3em 1em #F22613,
+	4em 1em #F22613,
+	5em 1em #F22613,
+	6em 1em #F22613,
+
+	0em 2em #F22613,
+	1em 2em #F22613,
+	2em 2em #F22613,
+	3em 2em #F22613,
+	4em 2em #F22613,
+	5em 2em #F22613,
+	6em 2em #F22613,
+
+	1em 3em #F22613,
+	2em 3em #F22613,
+	3em 3em #F22613,
+	4em 3em #F22613,
+	5em 3em #F22613,
+
+	2em 4em #F22613,
+	3em 4em #F22613,
+	4em 4em #F22613,
+
+	3em 5em #F22613;
+}
+.title {
+  text-align: center;
+  font-size: 1.5rem;
+  margin: 20px 0 10px;
+  color: #000;
+  position: relative;
+  z-index: 1; /* ensures it stays above background hearts */
+}
+body {
+  position: relative;
+  z-index: 0;
+}
+.clues-box {
+  background: white;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  max-width: 500px;
+}
+
+.clues-box h3 {
+  margin-top: 0;
+}
+
+.clues-box ol {
+  padding-left: 20px;
+}
+/* Wrap crossword + clues already exist as .foreground */
+.foreground {
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.foreground.hidden {
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+}
+
+/* BOOM text */
+#boom {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+  font-weight: bold;
+  color: #000;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  z-index: 20;
+  pointer-events: none;
+}
+
+#boom.show {
+  opacity: 1;
+  transform: scale(1);
+}
 </style>
 </head>
 
 <body>
+<h1 class="title">a baby crossword for a baby bingington</h1>
+<div id="background">  </div>
+<div class="foreground">
+  <div style="display:flex; gap:40px; justify-content:center;">
 
+    <!-- Crossword -->
+    <div>
+      <div class="crossword" id="crossword"></div>
+      <div class="completed" id="completed">Puzzle Completed!</div>
+    </div>
 
-<div style="display:flex; gap:40px; justify-content:center;">
-
-  <!-- Crossword -->
-  <div>
-    <div class="crossword" id="crossword"></div>
-    <div class="completed" id="completed">✅ Puzzle Completed!</div>
+    <!-- Clues -->
+    <div class="clues-box">
+      <h3>Across</h3>
+      <ul id="across-clues" class="clue-list"></ul>
+      <h3>Down</h3>
+      <ul id="down-clues" class="clue-list"></ul>
+    </div>
   </div>
-
-  <!-- Clues -->
-  <div style="max-width:300px;">
-    <h3>Across</h3>
-    <ol id="across-clues"></ol>
-
-    <h3>Down</h3>
-    <ol id="down-clues"></ol>
-  </div>
-
 </div>
-
+<div id="boom">BOOOMM🤯😁🤓🥰❤️✅</div>
 <script>
 // 15 rows x 16 cols
 // NOTE: Cells marked with answer:"?" are in the region that is not perfectly legible
@@ -119,10 +229,10 @@ const grid = [
   [null,null,null,{answer:"L"},null,null,{answer:"A"},null,null,null,null,null,{answer:"W"},null,{answer:"U"},null],
 
   // row 11  (this is where FIERCE+MORNING appear, but could be row 10 instead)
-  [null,null,{number:15, answer:"F"},{answer:"I"},{answer:"E"},{answer:"R"},{answer:"C"},{answer:"E"},null,{number:16,answer:"M"},{answer:"O"},{answer:"R"},{answer:"N"},{answer:"I"},{answer:"N"},{answer:"G"}],
+  [null,null,{number:15, answer:"F"},{answer:"I"},{answer:"E"},{answer:"R"},{answer:"C"},{answer:"E"},null,{number:16,answer:"M"},{number:17, answer:"O"},{answer:"R"},{answer:"N"},{answer:"I"},{answer:"N"},{answer:"G"}],
 
   // row 12 (continuations under the MORNING/HUNGRY column area)
-  [null,null,null,{answer:"N"},null,null,{answer:"K"},null,null,null,null,null,null,null,{answer:"G"},null],
+  [null,null,null,{answer:"N"},null,null,{answer:"K"},null,null,null,{answer: "F"},null,null,null,{answer:"G"},null],
 
   // row 13
   [null,null,null,{answer:"G"},null,null,null,null,null,null,null,null,null,null,{answer:"R"},null],
@@ -133,10 +243,27 @@ const grid = [
 
 const clues = {
   across: {
-    1: "Clue text here"
+    1: "ethic group despised by a particular med student",
+    6: "product of wisconsin",
+    7: "popular suffix",
+    9: "subject of relevant studies",
+    10: "one of my goals is to make you a bit",
+    12: "could be in pieces, phrase: (6across) (12down) not the best",
+    15: "rawr",
+    16: "early in the day"
   },
   down: {
-    2: "Clue text here"
+    2: "sometimes i get a bit __",
+    3: "particularly active at temperature regulation",
+    4: "phrase: (4down) (3down) (5down) something i find sometimes in the morning",
+    5: "tik tok thought they could fight a big one",
+    8: "2 phrases: (15across) (16across) (8down) a true classic and (2down) (9across) (8down) alternate for lazy days",
+    11: "quirk of mine, popular birthday activity",
+    12: "could do this to a nut",
+    13: "initial appearence of light",
+    14: "sometimes you get a bit",
+    17: "phrase: (12down) (17down) (13down) my time of arisal, alledgedly"
+
   }
 };
 
@@ -214,30 +341,68 @@ function moveNext(r, c) {
   if (next) next.focus();
 }
 
-function checkCompletion() {
-  const done = inputs.every(
-    i => i.value
-  );
-  completed.style.display = done ? "block" : "none";
-}
 function renderClues() {
   const acrossList = document.getElementById("across-clues");
   const downList = document.getElementById("down-clues");
 
   for (const num in clues.across) {
     const li = document.createElement("li");
-    li.textContent = clues.across[num];
+    li.textContent = `${num}. ${clues.across[num]}`;
     acrossList.appendChild(li);
   }
 
   for (const num in clues.down) {
     const li = document.createElement("li");
-    li.textContent = clues.down[num];
+    li.textContent = `${num}. ${clues.down[num]}`;
     downList.appendChild(li);
   }
 }
 
+const ROWS = 4;
+const COLS = 6;
+const PADDING = 20; // inner padding per cell (px)
+
+const bg = document.getElementById("background");
+
+const cellWidth = window.innerWidth / COLS;
+const cellHeight = window.innerHeight / ROWS;
+
+for (let row = 0; row < ROWS; row++) {
+  for (let col = 0; col < COLS; col++) {
+
+    const block = document.createElement("div");
+    block.className = "pixel-block";
+
+    const heart = document.createElement("span");
+    heart.className = "pixelized--heart";
+    block.appendChild(heart);
+
+    const minX = col * cellWidth + PADDING;
+    const maxX = (col + 1) * cellWidth - PADDING;
+    const minY = row * cellHeight + PADDING;
+    const maxY = (row + 1) * cellHeight - PADDING;
+
+    const x = minX + Math.random() * (maxX - minX);
+    const y = minY + Math.random() * (maxY - minY);
+
+    const scale = 0.5;
+    block.style.left = `${x}px`;
+    block.style.top = `${y}px`;
+    block.style.transform = `scale(${scale})`;
+
+    bg.appendChild(block);
+  }
+}
+
 renderClues();
+function checkCompletion() {
+  const done = inputs.every(i => i.value);
+  if (done) {
+    document.querySelector(".foreground").classList.add("hidden");
+    document.getElementById("boom").classList.add("show");
+  }
+}
+
 </script>
 </body>
 </html>
